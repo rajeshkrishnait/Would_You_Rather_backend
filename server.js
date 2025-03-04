@@ -15,7 +15,7 @@ app.use(session({
 // Define allowed origins (add your production frontend URL)
 const allowedOrigins = [
   "http://localhost:5173", 
-  "https://rajeshkrishnait.github.io/Would_You_Rather_frontend/"
+  "https://rajeshkrishnait.github.io"
 ];
 app.use(
   cors({

@@ -17,18 +17,18 @@ const allowedOrigins = [
   "http://localhost:5173", 
   "https://rajeshkrishnait.github.io/Would_You_Rather_frontend/"
 ];
-
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log("Blocked CORS request from:", origin); // Debugging log
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT"], // Allow specific HTTP methods
-    credentials: true, // Allow cookies if needed
+    methods: ["GET", "POST", "PUT"], 
+    credentials: true, // Required if using cookies or auth tokens
   })
 );
 

@@ -45,7 +45,9 @@ app.get('/clear-session', (req, res) => {
   });
 });
 
-
+app.get("/healthcheck", (req, res) => {
+  res.status(500).send("OK");
+});
 // Import Routes
 const questionRoutes = require("./routes/questionRoutes"); 
 app.use("/api/questions", questionRoutes);  // API routes

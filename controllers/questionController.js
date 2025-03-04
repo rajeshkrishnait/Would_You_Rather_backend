@@ -48,7 +48,6 @@ exports.getRandomQuestion = async (req, res) => {
 exports.voteOnQuestion = async (req, res) => {
   const { id } = req.params;
   const { vote } = req.body; // Should be either "vote_one" or "vote_two"
-  console.log(id, vote)
   try {
     let question = await Question.findOne({ question_id: id });
     if (!question) return res.status(404).json({ message: "Question not found" });
@@ -78,7 +77,6 @@ exports.voteOnQuestion = async (req, res) => {
 // ✅ POST - Create a new question
 exports.createNewQuestion = async (req, res) => {
   const { question_one, question_two } = req.body;
-  console.log(req.body)
   // Validate input
   if (!question_one || !question_two) {
     return res.status(400).json({ message: "Both questions are required" });

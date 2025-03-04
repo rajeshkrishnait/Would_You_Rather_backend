@@ -12,13 +12,25 @@ app.use(session({
   saveUninitialized: true,
   cookie: { secure: false } // Set `true` for HTTPS
 }));
+// Define allowed origins (add your production frontend URL)
+const allowedOrigins = [
+  "http://localhost:5173", 
+  "https://rajeshkrishnait.github.io/Would_You_Rather_frontend/"
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // Change this to your frontend URL
-    methods: ["GET", "POST", "PUT"], // Allow specific methods
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT"], // Allow specific HTTP methods
     credentials: true, // Allow cookies if needed
   })
-); // Allow all origins
+);
 
 // Middleware
 app.use(express.json());

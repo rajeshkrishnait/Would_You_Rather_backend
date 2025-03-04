@@ -1,19 +1,44 @@
 const Question = require("../models/Question.js");
 const generateBase62Id = require("../utils/idGenerator.js"); // Import helper
-
 // 🎲 GET Random Question
-
 exports.getRandomQuestion = async (req, res) => {
   try {
-    const randomQuestion = await Question.aggregate([{ $sample: { size: 1 } }]);
+    const batchSize = 3; // Adjust batch size as needed
+    let questions = await Question.find().sort({ question_id: 1 }); // Ensure consistent order
 
-    if (!randomQuestion.length) {
+    if (questions.length === 0) {
       return res.status(404).json({ message: "No questions found" });
     }
+    // Initialize session variables correctly (set startIndex only once)
+    if (req.session.startIndex === undefined) {
+      req.session.startIndex = Math.floor(Math.random() * questions.length);
+      req.session.prevIndex = req.session.startIndex; // Start from this index
+    }else if(req.session.startIndex == req.session.prevIndex){
+      return res.json({ message: "No more questions to send" });
 
-    res.json(randomQuestion[0]); // Send a single random document
+    }
+    let result = [];
+    let prevIndex = req.session.prevIndex;
+    let count = 0;
+    // Fetch batchSize number of questions in circular order
+    while (result.length < batchSize && count < questions.length) {
+      let question = questions[prevIndex];
+      result.push(question);
+
+      // Move circularly
+      prevIndex = (prevIndex + 1) % questions.length;
+      count++;
+
+      // Stop if prevIndex meets startIndex after at least one full cycle
+      if (prevIndex === req.session.startIndex) break;
+    }
+
+    // Update prevIndex for the next request (startIndex remains unchanged)
+    req.session.prevIndex = prevIndex;
+
+    res.json(result);
   } catch (error) {
-    console.error("Error fetching random question:", error);
+    console.error("Error fetching random questions:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -23,7 +48,7 @@ exports.getRandomQuestion = async (req, res) => {
 exports.voteOnQuestion = async (req, res) => {
   const { id } = req.params;
   const { vote } = req.body; // Should be either "vote_one" or "vote_two"
-
+  console.log(id, vote)
   try {
     let question = await Question.findOne({ question_id: id });
     if (!question) return res.status(404).json({ message: "Question not found" });

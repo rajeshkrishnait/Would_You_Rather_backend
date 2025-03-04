@@ -4,6 +4,6 @@ const { getRandomQuestion, voteOnQuestion, createNewQuestion } = require("../con
 const router = express.Router();
 
 router.get("/random", getRandomQuestion);
-router.put("/:id/vote", voteOnQuestion);
-router.put("/new_question", createNewQuestion);
+router.put("/vote/:id", voteOnQuestion);
+router.post("/new_question", createNewQuestion);
 module.exports = router;

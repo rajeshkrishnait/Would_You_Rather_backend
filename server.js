@@ -1,10 +1,17 @@
 const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config();
-
+const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const cors = require("cors");
+// Initialize session middleware (add this in your server setup)
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Set `true` for HTTPS
+}));
 app.use(
   cors({
     origin: "http://localhost:5173", // Change this to your frontend URL
@@ -12,8 +19,20 @@ app.use(
     credentials: true, // Allow cookies if needed
   })
 ); // Allow all origins
+
 // Middleware
 app.use(express.json());
+
+app.get('/clear-session', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ message: "Failed to clear session" });
+    }
+    res.clearCookie('connect.sid'); // Removes session cookie from browser
+    res.json({ message: "Session cleared" });
+  });
+});
+
 
 // Import Routes
 const questionRoutes = require("./routes/questionRoutes"); 

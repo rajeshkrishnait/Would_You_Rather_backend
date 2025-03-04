@@ -66,7 +66,7 @@ exports.voteOnQuestion = async (req, res) => {
     // Save the document and fetch the updated version
     await question.save();
     question = await Question.findOne({ question_id: id }); // Fetch latest data
-    console.log(question)
+
     res.json({ message: "Vote recorded", question });
   } catch (error) {
     console.error(error);

@@ -13,9 +13,6 @@ exports.getRandomQuestion = async (req, res) => {
     if (req.session.startIndex === undefined) {
       req.session.startIndex = Math.floor(Math.random() * questions.length);
       req.session.prevIndex = req.session.startIndex; // Start from this index
-    }else if(req.session.startIndex == req.session.prevIndex){
-      return res.json({ message: "No more questions to send" });
-
     }
     let result = [];
     let prevIndex = req.session.prevIndex;
@@ -28,14 +25,10 @@ exports.getRandomQuestion = async (req, res) => {
       // Move circularly
       prevIndex = (prevIndex + 1) % questions.length;
       count++;
-
-      // Stop if prevIndex meets startIndex after at least one full cycle
-      if (prevIndex === req.session.startIndex) break;
     }
 
     // Update prevIndex for the next request (startIndex remains unchanged)
     req.session.prevIndex = prevIndex;
-
     res.json(result);
   } catch (error) {
     console.error("Error fetching random questions:", error);

@@ -1,5 +1,21 @@
 const Question = require("../models/Question.js");
 const generateBase62Id = require("../utils/idGenerator.js"); // Import helper
+const multer = require("multer");
+const { v2: cloudinary } = require("cloudinary");
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Multer Storage (for handling file uploads)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+
+
 // 🎲 GET Random Question
 exports.getRandomQuestion = async (req, res) => {
   try {
@@ -41,6 +57,7 @@ exports.getRandomQuestion = async (req, res) => {
 exports.voteOnQuestion = async (req, res) => {
   const { id } = req.params;
   const { vote } = req.body; // Should be either "vote_one" or "vote_two"
+  console.log(req.body)
   try {
     let question = await Question.findOne({ question_id: id });
     if (!question) return res.status(404).json({ message: "Question not found" });
@@ -66,29 +83,68 @@ exports.voteOnQuestion = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+exports.createNewQuestion = [
+  upload.fields([
+    { name: "imageOne", maxCount: 1 },
+    { name: "imageTwo", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { questionOne, questionTwo } = req.body;
 
-// ✅ POST - Create a new question
-exports.createNewQuestion = async (req, res) => {
-  const { question_one, question_two } = req.body;
-  // Validate input
-  if (!question_one || !question_two) {
-    return res.status(400).json({ message: "Both questions are required" });
-  }
+      // Check if all required fields are present
+      if (
+        !questionOne ||
+        !questionTwo ||
+        !req.files.imageOne ||
+        !req.files.imageTwo
+      ) {
+        return res.status(400).json({
+          message: "Both questions and exactly two images are required",
+        });
+      }
 
-  try {
-    const question = new Question({
-      question_id: generateBase62Id(), // Generate Base62 encoded ID
-      question_one,
-      question_two,
-      vote_one: 0,
-      vote_two: 0,
-      total_votes: 0,
-    });
+      // Extract image buffers from request
+      const imageOneBuffer = req.files.imageOne[0].buffer;
+      const imageTwoBuffer = req.files.imageTwo[0].buffer;
 
-    await question.save();
-    res.status(201).json({ message: "Question created successfully", question });
-  } catch (error) {
-    console.error("Error creating question:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+      // Function to upload image to Cloudinary
+      const uploadToCloudinary = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { resource_type: "image", format: "webp", quality: "auto" },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result.secure_url);
+            }
+          );
+          stream.end(fileBuffer);
+        });
+      };
+
+      // Upload both images to Cloudinary in parallel
+      const [imageOneUrl, imageTwoUrl] = await Promise.all([
+        uploadToCloudinary(imageOneBuffer),
+        uploadToCloudinary(imageTwoBuffer),
+      ]);
+
+      // Save the new question to the database
+      const question = new Question({
+        question_id: generateBase62Id(),
+        question_one: questionOne,
+        question_two: questionTwo,
+        vote_one: 0,
+        vote_two: 0,
+        total_votes: 0,
+        image_one_url: imageOneUrl,
+        image_two_url: imageTwoUrl,
+      });
+
+      await question.save();
+      res.status(201).json({ message: "Question created successfully", question });
+    } catch (error) {
+      console.error("Error creating question:", error);
+      res.status(500).json({ error: "Server error" });
+    }
+  },
+];
